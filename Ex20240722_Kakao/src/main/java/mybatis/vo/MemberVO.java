@@ -1,7 +1,7 @@
 package mybatis.vo;
 
 public class MemberVO {
-	private String m_id, m_name, nickName, p_img, thum_img;
+	private String m_id, m_name, nickname, p_img, thum_img;
 	private String email, phone, addr;
 	public String getM_id() {
 		return m_id;
@@ -15,11 +15,12 @@ public class MemberVO {
 	public void setM_name(String m_name) {
 		this.m_name = m_name;
 	}
-	public String getNickName() {
-		return nickName;
+	
+	public String getNickname() {
+		return nickname;
 	}
-	public void setNickName(String nickName) {
-		this.nickName = nickName;
+	public void setNickname(String nickname) {
+		this.nickname = nickname;
 	}
 	public String getP_img() {
 		return p_img;

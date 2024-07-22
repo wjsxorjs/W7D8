@@ -6,13 +6,20 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.servlet.http.HttpSession;
+import javax.swing.text.html.HTMLEditorKit.Parser;
 
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
+
+import mybatis.vo.MemberVO;
 
 @Controller
 public class LoginController {
@@ -40,8 +47,8 @@ public class LoginController {
 		
 		// 받은 인증코드를 가지고 2번째 카카오서버와 통신을 하기 위해
 		// 토큰을 요청하여 받아야 한다.
-		String access_Token = "";
-		String refresh_Token = "";
+		String access_token = "";
+		String refresh_token = "";
 		
 		String req_url = "https://kauth.kakao.com/oauth/token";
 		
@@ -87,17 +94,107 @@ public class LoginController {
 						new InputStreamReader(conn.getInputStream())
 						);
 				
-			}
-			
-			
+				StringBuffer result = new StringBuffer();
+				String line = null;
+				
+				// 한 줄 단위로 읽어서 result라는 StringBuffer에 적재한다.
+				while( ( line = br.readLine() ) != null) {
+					result.append(line);
+				}
+				
+				// System.out.println("RESULT: "+ result.toString());
+				
+				// JSON 파싱 처리: "access_token"과
+				// "refresh_token"을 찾아내어 값을 얻어내야 한다.
+				JSONParser pars = new JSONParser();
+				// 위 객체는 mvnrepository에서 json-simple로 검색하여
+				// 첫번째로 나오는 Google의 라이브러리를 얻었다.
+				// 이 파서를 통해 문자열로 되어있는 json표기법을 객체로 만든다.
+				
+				Object obj = pars.parse(result.toString());
+				JSONObject json = (JSONObject) obj;
+				
+				access_token = (String) json.get("access_token");
+				refresh_token = (String) json.get("refresh_token");
+				
+				// System.out.println("a_token: "+ access_token);
+				// System.out.println("r_token: "+ refresh_token);
+				
+				// 이제 받은 토큰을 가진 마지막 3번째 호출인
+				// 사용자 정보를 요청해야한다.
+				
+				String apiURL = "https://kapi.kakao.com/v2/user/me";
+				String header  = "Bearer "+access_token;
+				
+				
+				// 자바에서 특정 웹 상의 경로(URL)를 호툴하기 위해서는
+				// 먼저 URL객체를 생성한다.
+				URL url2 = new URL(apiURL);
+				
+				HttpURLConnection conn2 = (HttpURLConnection) url2.openConnection();
+				
+				conn2.setRequestMethod("POST");
+				conn2.setDoOutput(true);
+				
+				// 카카오API의 문서 상에 조건이 access토큰을 header에 담아 보내라고
+				// 명시되어 있으니 헤더 설정을 하자!
+				conn2.setRequestProperty("Authorization", header);
+				
+				
+				res_code = conn2.getResponseCode();
+				 // System.out.println("res_code: " + res_code);
+				 // System.out.println("HTTP_OK: " + HttpURLConnection.HTTP_OK);
+				
+				if(res_code == HttpsURLConnection.HTTP_OK) {
+					BufferedReader brdm = new BufferedReader(
+							new InputStreamReader(conn2.getInputStream())
+							);
+					
+					String str = null;
+					StringBuffer res = new StringBuffer();
+					while( ( str = brdm.readLine()  ) != null) {
+						res.append(str);
+						
+					}
+					
+					// System.out.println(res.toString());
+					
+					// 받은 JSON표기번의 문자열 값을 JSON 객체로 변환 후
+					// 원하는 정보(nickname, profile_image)를 얻어낸다.
+					
+					// 앞서 이미 Parser객체(JSONParser)가 생성되어있다.
+					// res를 JSONObject로 변환해야 한다.
+					JSONObject json2 =  (JSONObject) pars.parse(res.toString());
+					
+					// 원하는 정보인 nickname과 profile_image가 있는
+					// properties라는 키의 값을 얻어낸다.
+					JSONObject properties = (JSONObject) json2.get("properties");
+					
+					// -------------------- 사용자 정보 ---------------------------------
+					String nickname = (String) properties.get("nickname");
+					String profile_image = (String) properties.get("profile_image");
+					// -------------------------------------------------------------------
+					
+					// System.out.println("nickname: "+ nickname);
+					// System.out.println("profile_image: "+ profile_image);
+					
+					MemberVO mvo = new MemberVO();
+					mvo.setNickname(nickname);
+					mvo.setP_img(profile_image);
+					
+					// 이렇게 카카오에서 정보를 mvo에 저장을 시킨 후
+					// ModelAndView에 저장하자.
+					mv.addObject("mvo",mvo);
+					mv.setViewName("reg2");
+					
+				}
+			} // res_code == 200의 끝
 		} catch (Exception e) {
 			e.printStackTrace();
-			
 		}
-		
 		return mv;
 	}
-	
-	
-	
 }
+
+
+
