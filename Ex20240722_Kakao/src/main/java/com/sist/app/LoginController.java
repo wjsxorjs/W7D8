@@ -19,6 +19,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import mybatis.vo.MemberVO;
+
 @Controller
 public class LoginController {
 
@@ -155,34 +157,44 @@ public class LoginController {
 						
 					}
 					
-					 System.out.println(res.toString());
+					// System.out.println(res.toString());
 					
 					// 받은 JSON표기번의 문자열 값을 JSON 객체로 변환 후
 					// 원하는 정보(nickname, profile_image)를 얻어낸다.
 					
+					// 앞서 이미 Parser객체(JSONParser)가 생성되어있다.
+					// res를 JSONObject로 변환해야 한다.
 					JSONObject json2 =  (JSONObject) pars.parse(res.toString());
 					
+					// 원하는 정보인 nickname과 profile_image가 있는
+					// properties라는 키의 값을 얻어낸다.
 					JSONObject properties = (JSONObject) json2.get("properties");
 					
+					// -------------------- 사용자 정보 ---------------------------------
 					String nickname = (String) properties.get("nickname");
 					String profile_image = (String) properties.get("profile_image");
+					// -------------------------------------------------------------------
 					
-					System.out.println("nickname: "+ nickname);
-					System.out.println("profile_image: "+ profile_image);
+					// System.out.println("nickname: "+ nickname);
+					// System.out.println("profile_image: "+ profile_image);
+					
+					MemberVO mvo = new MemberVO();
+					mvo.setNickname(nickname);
+					mvo.setP_img(profile_image);
+					
+					// 이렇게 카카오에서 정보를 mvo에 저장을 시킨 후
+					// ModelAndView에 저장하자.
+					mv.addObject("mvo",mvo);
+					mv.setViewName("reg2");
 					
 				}
-				
 			} // res_code == 200의 끝
-			
-			
 		} catch (Exception e) {
 			e.printStackTrace();
-			
 		}
-		
 		return mv;
 	}
-	
-	
-	
 }
+
+
+
